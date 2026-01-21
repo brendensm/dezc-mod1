@@ -18,7 +18,7 @@ docker run -it \
 
 pip --version
 ```
-pip 25.3
+answer: pip 25.3
 
 
 ## Question 2. Understanding Docker networking and docker-compose
@@ -65,6 +65,7 @@ volumes:
 
 If multiple answers are correct, select any 
 
+answer: db:5432
 
 ## Prepare the Data
 
@@ -80,6 +81,35 @@ You will also need the dataset with zones:
 wget https://github.com/DataTalksClub/nyc-tlc-data/releases/download/misc/taxi_zone_lookup.csv
 ```
 
+
+```bash
+cd dezc-docker-workshop
+
+wget https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-linux-amd64.zip
+unzip duckdb_cli-linux-amd64.zip
+sudo mv duckdb /usr/local/bin/
+
+
+duckdb -c "
+INSTALL postgres;
+LOAD postgres;
+ATTACH 'dbname=ny_taxi user=root password=root host=localhost port=5432' AS pg (TYPE POSTGRES);
+CREATE TABLE pg.green AS SELECT * FROM 'green_tripdata_2025-11.parquet';
+CREATE TABLE pg.zones AS SELECT * FROM 'taxi_zone_lookup.csv'
+"
+
+cd pipeline
+
+pip install uv
+
+uv run pgcli -h localhost -p 5432 -u root -d ny_taxi
+
+
+
+```
+
+
+
 ## Question 3. Counting short trips
 
 For the trips in November 2025 (lpep_pickup_datetime between '2025-11-01' and '2025-12-01', exclusive of the upper bound), how many trips had a `trip_distance` of less than or equal to 1 mile?
@@ -89,6 +119,17 @@ For the trips in November 2025 (lpep_pickup_datetime between '2025-11-01' and '2
 - 8,254
 - 8,421
 
+
+answer: 8,007
+SQL: 
+
+```SQL
+ SELECT
+  COUNT(*) 
+ FROM green WHERE trip_distance <= 1 
+ AND lpep_pickup_datetime between '2025-11-01' and '2025-12-01'
+
+```
 
 ## Question 4. Longest trip for each day
 
@@ -101,6 +142,14 @@ Use the pick up time for your calculations.
 - 2025-11-23
 - 2025-11-25
 
+answer: 2025-11-14
+SQL:
+```SQL
+select * from green 
+where trip_distance < 100 
+order by  trip_distance desc
+limit 1
+```
 
 ## Question 5. Biggest pickup zone
 
@@ -111,6 +160,19 @@ Which was the pickup zone with the largest `total_amount` (sum of all trips) on 
 - Morningside Heights
 - Forest Hills
 
+answer: East Harlem North
+SQL:
+```SQL
+SELECT 
+    z."Zone",
+    SUM(g."total_amount") as tot_sum
+FROM green as g
+INNER JOIN zones as z
+    ON g."PULocationID" = z."LocationID"
+WHERE DATE(g.lpep_pickup_datetime) = '2025-11-18' 
+GROUP BY z."Zone"
+order by tot_sum desc;
+```
 
 ## Question 6. Largest tip
 
@@ -122,3 +184,24 @@ Note: it's `tip` , not `trip`. We need the name of the zone, not the ID.
 - Yorkville West
 - East Harlem North
 - LaGuardia Airport
+
+answer: Yorkville West
+SQL:
+
+```SQL
+
+
+SELECT 
+    d."Zone",
+    g."tip_amount"
+FROM green as g
+INNER JOIN zones as z
+    ON g."PULocationID" = z."LocationID"
+
+INNER JOIN zones as d
+    ON g."DOLocationID" = d."LocationID"
+WHERE DATE(g.lpep_pickup_datetime) between '2025-11-01' and '2025-11-30' 
+AND z."Zone" = 'East Harlem North'
+order by g."tip_amount" desc
+limit 1
+```
