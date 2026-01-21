@@ -81,6 +81,7 @@ You will also need the dataset with zones:
 wget https://github.com/DataTalksClub/nyc-tlc-data/releases/download/misc/taxi_zone_lookup.csv
 ```
 
+To set up data:
 
 ```bash
 cd dezc-docker-workshop
@@ -121,6 +122,7 @@ For the trips in November 2025 (lpep_pickup_datetime between '2025-11-01' and '2
 
 
 answer: 8,007
+
 SQL: 
 
 ```SQL
@@ -143,6 +145,7 @@ Use the pick up time for your calculations.
 - 2025-11-25
 
 answer: 2025-11-14
+
 SQL:
 ```SQL
 select * from green 
@@ -161,6 +164,7 @@ Which was the pickup zone with the largest `total_amount` (sum of all trips) on 
 - Forest Hills
 
 answer: East Harlem North
+
 SQL:
 ```SQL
 SELECT 
@@ -186,6 +190,7 @@ Note: it's `tip` , not `trip`. We need the name of the zone, not the ID.
 - LaGuardia Airport
 
 answer: Yorkville West
+
 SQL:
 
 ```SQL
